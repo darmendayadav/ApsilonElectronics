@@ -321,13 +321,14 @@
         #loginScreen {
             position: fixed;
             inset: 0;
-            background: var(--bg-color);
+            background: transparent;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 2000;
             gap: 20px;
+            pointer-events: auto;
         }
         #loginScreen h2 { margin: 0; font-size: 1.4rem; font-weight: 600; }
         #loginScreen p  { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
@@ -342,6 +343,39 @@
             flex-direction: column;
             align-items: center;
             gap: 20px;
+        }
+        /* Locked preview state: dim but more visible; show a small Preview badge */
+        body.locked::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.28);
+            z-index: 1500;
+            backdrop-filter: blur(0.5px);
+        }
+        body.locked::after {
+            content: 'Preview — sign in to enable';
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 12px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            z-index: 1600;
+            pointer-events: none;
+        }
+        body.locked .container,
+        body.locked header,
+        body.locked .card,
+        body.locked .control-bar,
+        body.locked .side-panel {
+            filter: blur(1px);
+            opacity: 0.98;
+            pointer-events: none;
+            user-select: none;
         }
     </style>
 </head>
@@ -459,6 +493,9 @@
 </div>
 
 <script>
+    // Start locked: show main UI as a preview but inactive until user signs in
+    document.body.classList.add('locked');
+
     // =======================================================
     // ⚠️ PASTE YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL HERE ⚠️
     // =======================================================
@@ -491,6 +528,8 @@
         userPill.innerHTML = `${avatar} ${payload.name || loggedInUserEmail} <a href="#" onclick="logoutUser()" style="margin-left:8px; font-size:11px; color:var(--accent-danger);">[Sign out]</a>`;
 
         document.getElementById('loginScreen').style.display = 'none';
+        // Unlock main UI so it becomes interactive
+        document.body.classList.remove('locked');
         fetchData();
     }
 
@@ -556,6 +595,9 @@
     function logoutUser() {
         google.accounts.id.revoke(loggedInUserEmail, () => {
             localStorage.removeItem("apsilon_user_email");
+            // lock UI again and show login screen before reload
+            document.body.classList.add('locked');
+            document.getElementById('loginScreen').style.display = 'flex';
             location.reload();
         });
     }
