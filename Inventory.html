@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apsilon Electronics Inventory Manager</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #212529;
+            --text-muted: #6c757d;
+            --accent: #0d6efd;
+            --accent-success: #198754;
+            --accent-danger: #dc3545;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        h1 { font-size: 1.5rem; margin: 0; font-weight: 600; }
+        
+        .user-pill {
+            font-size: 0.85rem;
+            background: #e9ecef;
+            color: var(--text-main);
+            padding: 5px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .sync-status {
+            font-size: 0.85rem;
+            background: #e8f5e9;
+            color: var(--accent-success);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .sync-status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .sync-status.denied {
+            background: #f8d7da;
+            color: var(--accent-danger);
+        }
+
+        .control-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 18px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .tab-btn.active {
+            background-color: var(--text-main);
+            color: white;
+            border-color: var(--text-main);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-primary:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            padding: 0;
+            overflow-x: auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            min-width: 900px;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+            background-color: #fafafa;
+        }
+
+        /* Fast Qty Picker */
+        .qty-picker {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .qty-btn {
+            background: #f1f3f5;
+            border: none;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .qty-btn:hover { background: #e9ecef; }
+        .qty-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+
+        .qty-val {
+            width: 50px;
+            text-align: center;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Fixed Image Preview with Static Fallback to eliminate flickering */
+        .thumb-preview-box {
+            width: 45px;
+            height: 45px;
+            border-radius: 4px;
+            background: #e9ecef;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .thumb-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .fallback-icon {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: #e9ecef;
+        }
+
+        .link-icon {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .link-icon:hover { text-decoration: underline; }
+
+        /* Side Edit Drawer */
+        .side-panel {
+            position: fixed;
+            top: 0;
+            right: -450px;
+            width: 400px;
+            height: 100%;
+            background: var(--card-bg);
+            box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            padding: 25px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .side-panel.open { right: 0; }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: var(--text-main);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2);
+            display: none;
+            z-index: 999;
+        }
+        .overlay.show { display: block; }
+        
+        .hidden { display: none; }
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background-color: #fafafa; }
+        
+        .rate-tag {
+            font-weight: 600;
+            color: #2b2d42;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>Apsilon Electronics Inventory</h1>
+            <div style="margin-top: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <span id="syncIndicator" class="sync-status loading">● Connecting to Sheet...</span>
+                <span id="userIndicator" class="user-pill">👤 Loading user...</span>
+            </div>
+        </div>
+        <button id="addBtn" class="btn-primary" onclick="openDrawer('add')" disabled>+ Add New Item</button>
+    </header>
+
+    <div class="control-bar">
+        <div class="search-wrapper">
+            <input type="text" id="inventorySearch" class="search-input" placeholder="🔍 Search items, IDs, locations, or categories..." onkeyup="renderTable()">
+        </div>
+        <div class="tabs" id="tabContainer">
+            <button class="tab-btn active" id="tab-all" onclick="filterType('all')">All Items</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 60px;">Img</th>
+                    <th>Item / Description</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Rate</th>
+                    <th>Location</th>
+                    <th style="width: 160px;">Quick Quantity</th>
+                    <th>External Links</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+                <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">Downloading active inventory datasets...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+
+<div class="side-panel" id="sidePanel">
+    <div class="panel-header">
+        <h3 id="panelTitle" style="margin:0;">Add New Item</h3>
+        <button onclick="closeDrawer()" style="background:none; border:none; font-size:1.3rem; cursor:pointer;">&times;</button>
+    </div>
+    <form id="itemForm" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="formId">
+        
+        <div class="form-group">
+            <label>Item Type</label>
+            <select id="formType" required>
+                </select>
+        </div>
+
+        <div class="form-group">
+            <label>Item Description / Name</label>
+            <input type="text" id="formItemName" placeholder="e.g., TP4056 Charge IC" required>
+        </div>
+
+        <div class="form-group">
+            <label>Category</label>
+            <select id="formCategory" required>
+                </select>
+        </div>
+
+        <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="formQty" value="0" min="0" required>
+        </div>
+
+        <div class="form-group">
+            <label>Rate (Price per unit)</label>
+            <input type="number" step="0.01" id="formRate" value="0.00" min="0" required>
+        </div>
+
+        <div class="form-group">
+            <label>Location / Storage Bin</label>
+            <select id="formLocation" required>
+                </select>
+        </div>
+
+        <div class="form-group">
+            <label>Product Image URL</label>
+            <input type="url" id="formProductUrl" placeholder="https://example.com/item-image.jpg">
+        </div>
+
+        <div class="form-group">
+            <label>Marketplace Sales URL (Amazon/eBay)</label>
+            <input type="url" id="formSalesUrl" placeholder="https://amazon.com/dp/...">
+        </div>
+
+        <div class="panel-actions">
+            <button type="button" class="btn-secondary" onclick="closeDrawer()">Cancel</button>
+            <button type="submit" class="btn-primary" style="flex:2;">Save to Sheet</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // =======================================================
+    // ⚠️ PASTE YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL HERE ⚠️
+    // =======================================================
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby-19LAiFhyf4xYeNVlrNc5am6dbvloGv3cTV8TUjYxslpCSbmAp2mWaofe1SI7GsltaQ/exec";
+
+    let localInventoryData = [];
+    let dropdownOptions = { itemTypes: [], categories: [], locations: [] };
+    let currentFilterType = 'all';
+    let isAuthorizedUser = false;
+    let loggedInUserEmail = "";
+
+    // Helper to request with user credentials automatically
+    function getAccessEmail() {
+        // Try parsing from localstorage to persist, or prompt once if empty
+        let email = localStorage.getItem("apsilon_user_email");
+        if (!email) {
+            email = prompt("Welcome to Apsilon Inventory. Please enter your email to log in:");
+            if (email) {
+                localStorage.setItem("apsilon_user_email", email.trim().toLowerCase());
+            }
+        }
+        return email ? email.trim().toLowerCase() : "";
+    }
+
+    window.onload = function() {
+        if (WEB_APP_URL.includes("YOUR_APPS_SCRIPT")) {
+            alert("Configuration Required: Please paste your deployed Web App URL into the WEB_APP_URL variable inside the script tag!");
+            return;
+        }
+        loggedInUserEmail = getAccessEmail();
+        fetchData();
+    };
+
+    function setStatus(status, text) {
+        const indicator = document.getElementById('syncIndicator');
+        indicator.innerText = `● ${text}`;
+        indicator.className = "sync-status";
+        
+        if (status === 'loading' || status === 'syncing') {
+            indicator.classList.add('loading');
+        } else if (status === 'denied') {
+            indicator.classList.add('denied');
+        }
+    }
+
+    // 1. Fetch Dynamic Data from Google Sheet
+    async function fetchData() {
+        setStatus('loading', 'Loading Database...');
+        try {
+            const fetchUrl = `${WEB_APP_URL}?userEmail=${encodeURIComponent(loggedInUserEmail)}`;
+            const response = await fetch(fetchUrl);
+            const data = await response.json();
+            
+            localInventoryData = data.inventory || [];
+            dropdownOptions = data.options || { itemTypes: [], categories: [], locations: [] };
+            isAuthorizedUser = data.isAuthorized;
+
+            // Update user indicators
+            const userPill = document.getElementById('userIndicator');
+            userPill.innerHTML = `👤 ${loggedInUserEmail || "Anonymous Access"} <a href="#" onclick="logoutUser()" style="margin-left:8px; font-size:11px; color:var(--accent-danger);">[Change]</a>`;
+            
+            if (isAuthorizedUser) {
+                setStatus('synced', 'Admin Session (Authorized)');
+                document.getElementById('addBtn').disabled = false;
+            } else {
+                setStatus('denied', 'Read-Only (Modification Restricted)');
+                document.getElementById('addBtn').disabled = true;
+            }
+
+            setupDynamicDropdowns();
+            setupCategoryTabs();
+            renderTable();
+        } catch (error) {
+            console.error("Database fetch failed:", error);
+            setStatus('denied', 'Connection Failed');
+        }
+    }
+
+    function logoutUser() {
+        localStorage.removeItem("apsilon_user_email");
+        location.reload();
+    }
+
+    function setupDynamicDropdowns() {
+        const fillSelect = (id, list) => {
+            const select = document.getElementById(id);
+            select.innerHTML = '<option value="" disabled selected>-- Select --</option>';
+            list.forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.innerText = val;
+                select.appendChild(opt);
+            });
+        };
+
+        fillSelect('formType', dropdownOptions.itemTypes);
+        fillSelect('formCategory', dropdownOptions.categories);
+        fillSelect('formLocation', dropdownOptions.locations);
+    }
+
+    function setupCategoryTabs() {
+        const tabContainer = document.getElementById('tabContainer');
+        tabContainer.innerHTML = '<button class="tab-btn active" id="tab-all" onclick="filterType(\'all\')">All Items</button>';
+        
+        dropdownOptions.categories.forEach(category => {
+            const btn = document.createElement('button');
+            btn.className = "tab-btn";
+            btn.id = `tab-${category.replace(/\s+/g, '-').toLowerCase()}`;
+            btn.innerText = category;
+            btn.onclick = () => filterType(category);
+            tabContainer.appendChild(btn);
+        });
+    }
+
+    // 2. Render UI Inventory Matrix with FULL COLUMN SEARCH
+    function renderTable() {
+        const query = document.getElementById('inventorySearch').value.toLowerCase();
+        const tbody = document.getElementById('inventoryTableBody');
+        tbody.innerHTML = '';
+
+        if (localInventoryData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No items found in active sheet.</td></tr>';
+            return;
+        }
+
+        localInventoryData.forEach(item => {
+            // New Search Logic: Combines all column values into one searchable text block
+            const combinedRowText = [
+                item.InventoryID,
+                item.Item,
+                item.Category,
+                item.ItemType,
+                item.Rate,
+                item.Location,
+                item.Quantity
+            ].join(" ").toLowerCase();
+
+            const matchesSearch = combinedRowText.includes(query);
+            const matchesTab = (currentFilterType === 'all' || item.Category === currentFilterType);
+
+            if (matchesSearch && matchesTab) {
+                const tr = document.createElement('tr');
+                tr.className = 'clickable-row';
+                
+                tr.onclick = () => populateAndOpenEdit(item);
+
+                // Check if image exists to eliminate flickering
+                const hasValidImage = item.product_url && String(item.product_url).trim().toLowerCase().startsWith("http");
+                const imageHtml = hasValidImage 
+                    ? `<div class="thumb-preview-box"><img src="${item.product_url}" class="thumb-preview" alt="item"></div>`
+                    : `<div class="thumb-preview-box"><span class="fallback-icon">⚙️</span></div>`;
+
+                tr.innerHTML = `
+                    <td>${imageHtml}</td>
+                    <td>
+                        <strong>${item.Item}</strong><br>
+                        <small style="color: var(--text-muted)">ID: ${item.InventoryID}</small>
+                    </td>
+                    <td><span class="badge">${item.Category}</span></td>
+                    <td><small style="font-weight:600; text-transform: capitalize;">${item.ItemType || '—'}</small></td>
+                    <td><span class="rate-tag">$${Number(item.Rate || 0).toFixed(2)}</span></td>
+                    <td><code>${item.Location || '—'}</code></td>
+                    <td>
+                        <div class="qty-picker" onclick="event.stopPropagation()">
+                            <button class="qty-btn" ${!isAuthorizedUser ? 'disabled' : ''} onclick="adjustQty('${item.InventoryID}', -1, this)">-</button>
+                            <input type="number" class="qty-val" value="${item.Quantity}" ${!isAuthorizedUser ? 'disabled' : ''} onchange="directQtyInput('${item.InventoryID}', this)">
+                            <button class="qty-btn" ${!isAuthorizedUser ? 'disabled' : ''} onclick="adjustQty('${item.InventoryID}', 1, this)">+</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            ${hasValidImage ? `<a href="${item.product_url}" target="_blank" class="link-icon" onclick="event.stopPropagation()">Image Link ↗</a>` : ''}
+                            ${item.sales_url ? `<a href="${item.sales_url}" target="_blank" class="link-icon" style="color: var(--accent-success)" onclick="event.stopPropagation()">Sales Link ↗</a>` : ''}
+                            ${(!hasValidImage && !item.sales_url) ? '—' : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+    }
+
+    function filterType(category) {
+        currentFilterType = category;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        
+        const safeId = category.replace(/\s+/g, '-').toLowerCase();
+        const activeBtn = document.getElementById(`tab-${safeId}`) || document.getElementById('tab-all');
+        if (activeBtn) activeBtn.classList.add('active');
+        
+        renderTable();
+    }
+
+    // 3. Quantity Controls (Secure)
+    async function adjustQty(id, amount, button) {
+        if (!isAuthorizedUser) return;
+        const input = button.parentNode.querySelector('.qty-val');
+        let currentVal = parseInt(input.value) || 0;
+        currentVal += amount;
+        if (currentVal < 0) currentVal = 0;
+        input.value = currentVal;
+        
+        await syncQtyToSheet(id, currentVal);
+    }
+
+    async function directQtyInput(id, input) {
+        if (!isAuthorizedUser) return;
+        let currentVal = parseInt(input.value) || 0;
+        if (currentVal < 0) currentVal = 0;
+        await syncQtyToSheet(id, currentVal);
+    }
+
+    async function syncQtyToSheet(id, newQty) {
+        setStatus('syncing', 'Saving Quantity...');
+        
+        const item = localInventoryData.find(i => i.InventoryID == id);
+        if (item) item.Quantity = newQty;
+
+        try {
+            const res = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'updateQty', 
+                    id: id, 
+                    qty: newQty,
+                    userEmail: loggedInUserEmail
+                })
+            });
+            const result = await res.json();
+            if(result.status === 'success') {
+                setStatus('synced', 'Quantity Synced');
+            } else {
+                setStatus('denied', result.message);
+                fetchData(); 
+            }
+        } catch (error) {
+            console.error(error);
+            setStatus('denied', 'Sync Error');
+        }
+    }
+
+    // 4. Modal Drawer Control
+    function openDrawer(mode) {
+        document.getElementById('sidePanel').classList.add('open');
+        document.getElementById('overlay').classList.add('show');
+        if(mode === 'add') {
+            document.getElementById('panelTitle').innerText = "Add New Item";
+            document.getElementById('itemForm').reset();
+            document.getElementById('formId').value = "";
+        }
+    }
+
+    function closeDrawer() {
+        document.getElementById('sidePanel').classList.remove('open');
+        document.getElementById('overlay').classList.remove('show');
+    }
+
+    function populateAndOpenEdit(item) {
+        if (!isAuthorizedUser) {
+            alert("View Only Mode: You are logged in as a non-admin account and cannot edit this product.");
+            return;
+        }
+        openDrawer('edit');
+        document.getElementById('panelTitle').innerText = "Modify Details";
+        document.getElementById('formId').value = item.InventoryID;
+        document.getElementById('formType').value = item.ItemType || "";
+        document.getElementById('formItemName').value = item.Item || "";
+        document.getElementById('formCategory').value = item.Category || "";
+        document.getElementById('formQty').value = item.Quantity || 0;
+        document.getElementById('formRate').value = Number(item.Rate || 0).toFixed(2);
+        document.getElementById('formLocation').value = item.Location || "";
+        document.getElementById('formProductUrl').value = item.product_url || "";
+        document.getElementById('formSalesUrl').value = item.sales_url || "";
+    }
+
+    async function handleFormSubmit(event) {
+        event.preventDefault();
+        setStatus('syncing', 'Submitting changes...');
+        closeDrawer();
+
+        const payload = {
+            action: 'addOrEdit',
+            userEmail: loggedInUserEmail,
+            item: {
+                InventoryID: document.getElementById('formId').value || null,
+                ItemType: document.getElementById('formType').value,
+                Item: document.getElementById('formItemName').value,
+                Category: document.getElementById('formCategory').value,
+                Quantity: parseInt(document.getElementById('formQty').value) || 0,
+                Rate: parseFloat(document.getElementById('formRate').value) || 0,
+                Location: document.getElementById('formLocation').value,
+                product_url: document.getElementById('formProductUrl').value,
+                sales_url: document.getElementById('formSalesUrl').value
+            }
+        };
+
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                await fetchData(); 
+            } else {
+                alert("Error: " + result.message);
+                setStatus('denied', 'Action Blocked');
+            }
+        } catch (error) {
+            console.error(error);
+            setStatus('denied', 'Save Failed');
+        }
+    }
+</script>
+
+</body>
+</html>
