@@ -1,0 +1,28 @@
+name: Plan-First Agentic Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronized]
+
+jobs:
+  evaluate-and-gate-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Plan Format
+        run: |
+          # The exam tests your ability to validate plans before execution!
+          # This step scans the workspace for an approved plan.md
+          if [ ! -f "plan.md" ]; then
+            echo "::error::No implementation plan.md found. Agent planning phase required!"
+            exit 1
+          fi
+          
+          # Simple check to ensure the plan matches our structured schema
+          if ! grep -q "### Target Files" plan.md; then
+            echo "::error::Plan does not follow the required schema structure."
+            exit 1
+          fi
+          echo "Plan structure validated successfully!"
