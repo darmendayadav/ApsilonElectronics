@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apsilon Electronics Inventory Manager</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -315,9 +316,45 @@
             font-weight: 600;
             color: #2b2d42;
         }
+
+        /* Google Sign-In overlay */
+        #loginScreen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            gap: 20px;
+        }
+        #loginScreen h2 { margin: 0; font-size: 1.4rem; font-weight: 600; }
+        #loginScreen p  { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+        .login-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
     </style>
 </head>
 <body>
+
+<!-- Google Sign-In overlay (shown until authenticated) -->
+<div id="loginScreen">
+    <div class="login-card">
+        <h2>Apsilon Electronics</h2>
+        <p>Sign in with your Google account to continue</p>
+        <div id="googleSignInBtn"></div>
+    </div>
+</div>
 
 <div class="container">
     <header>
@@ -426,6 +463,7 @@
     // ⚠️ PASTE YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL HERE ⚠️
     // =======================================================
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby-19LAiFhyf4xYeNVlrNc5am6dbvloGv3cTV8TUjYxslpCSbmAp2mWaofe1SI7GsltaQ/exec";
+    const GOOGLE_CLIENT_ID = "377969579694-482nc2n9mn11qrgtkuks1f77uu671d7o.apps.googleusercontent.com";
 
     let localInventoryData = [];
     let dropdownOptions = { itemTypes: [], categories: [], locations: [] };
@@ -433,17 +471,27 @@
     let isAuthorizedUser = false;
     let loggedInUserEmail = "";
 
-    // Helper to request with user credentials automatically
-    function getAccessEmail() {
-        // Try parsing from localstorage to persist, or prompt once if empty
-        let email = localStorage.getItem("apsilon_user_email");
-        if (!email) {
-            email = prompt("Welcome to Apsilon Inventory. Please enter your email to log in:");
-            if (email) {
-                localStorage.setItem("apsilon_user_email", email.trim().toLowerCase());
-            }
-        }
-        return email ? email.trim().toLowerCase() : "";
+    function decodeJwtPayload(token) {
+        try {
+            return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        } catch(e) { return null; }
+    }
+
+    function handleGoogleCredential(response) {
+        const payload = decodeJwtPayload(response.credential);
+        if (!payload || !payload.email) return;
+
+        loggedInUserEmail = payload.email.trim().toLowerCase();
+        localStorage.setItem("apsilon_user_email", loggedInUserEmail);
+
+        const userPill = document.getElementById('userIndicator');
+        const avatar = payload.picture
+            ? `<img src="${payload.picture}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;">`
+            : '👤';
+        userPill.innerHTML = `${avatar} ${payload.name || loggedInUserEmail} <a href="#" onclick="logoutUser()" style="margin-left:8px; font-size:11px; color:var(--accent-danger);">[Sign out]</a>`;
+
+        document.getElementById('loginScreen').style.display = 'none';
+        fetchData();
     }
 
     window.onload = function() {
@@ -451,8 +499,17 @@
             alert("Configuration Required: Please paste your deployed Web App URL into the WEB_APP_URL variable inside the script tag!");
             return;
         }
-        loggedInUserEmail = getAccessEmail();
-        fetchData();
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredential,
+            auto_select: !!localStorage.getItem("apsilon_user_email")
+        });
+        google.accounts.id.renderButton(document.getElementById('googleSignInBtn'), {
+            theme: 'outline',
+            size: 'large',
+            text: 'signin_with'
+        });
+        google.accounts.id.prompt();
     };
 
     function setStatus(status, text) {
@@ -479,10 +536,6 @@
             dropdownOptions = data.options || { itemTypes: [], categories: [], locations: [] };
             isAuthorizedUser = data.isAuthorized;
 
-            // Update user indicators
-            const userPill = document.getElementById('userIndicator');
-            userPill.innerHTML = `👤 ${loggedInUserEmail || "Anonymous Access"} <a href="#" onclick="logoutUser()" style="margin-left:8px; font-size:11px; color:var(--accent-danger);">[Change]</a>`;
-            
             if (isAuthorizedUser) {
                 setStatus('synced', 'Admin Session (Authorized)');
                 document.getElementById('addBtn').disabled = false;
@@ -501,8 +554,10 @@
     }
 
     function logoutUser() {
-        localStorage.removeItem("apsilon_user_email");
-        location.reload();
+        google.accounts.id.revoke(loggedInUserEmail, () => {
+            localStorage.removeItem("apsilon_user_email");
+            location.reload();
+        });
     }
 
     function setupDynamicDropdowns() {
