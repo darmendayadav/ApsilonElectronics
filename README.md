@@ -2,6 +2,9 @@
 
 Single-page inventory app for Apsilon Electronics.
 
+# Website is accessible as 
+https://darmendayadav.github.io/ApsilonElectronics/
+
 ## Run locally
 
 This project is static HTML, so no build is needed.
