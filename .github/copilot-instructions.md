@@ -57,13 +57,3 @@ Then open `http://localhost:8080`.
 ## Deployment
 
 Push to `main` — the `deploy-pages.yml` workflow automatically deploys to GitHub Pages. No manual steps needed after initial setup.
-
-# Coding Standards for Apsilon Electronics
-
-## Style Guidelines
-- Use TypeScript for all modern backend modules.
-- Ensure all business logic functions include basic unit tests.
-
-## Security Controls (Exam Prep Topic!)
-- Never commit raw API keys, credentials, or tokens.
-- Agents must use read-only actions unless explicitly tasked with a feature implementation.
